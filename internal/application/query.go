@@ -10,12 +10,6 @@ type CaseDetail struct {
 }
 
 func (s *Service) GetCase(caseID string) (CaseDetail, error) {
-	s.detailMu.RLock()
-	cached, ok := s.detailCache[caseID]
-	s.detailMu.RUnlock()
-	if ok {
-		return cloneCaseDetail(cached), nil
-	}
 	item, err := s.store.Get(caseID)
 	if err != nil {
 		return CaseDetail{}, err
@@ -25,9 +19,6 @@ func (s *Service) GetCase(caseID string) (CaseDetail, error) {
 		return CaseDetail{}, err
 	}
 	detail := CaseDetail{Case: item, Timeline: events}
-	s.detailMu.Lock()
-	s.detailCache[caseID] = detail
-	s.detailMu.Unlock()
 	return cloneCaseDetail(detail), nil
 }
 
