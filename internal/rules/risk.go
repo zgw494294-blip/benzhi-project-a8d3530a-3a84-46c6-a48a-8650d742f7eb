@@ -13,7 +13,7 @@ func (e *Engine) Assess(habitat string, expected domain.IndicatorRange, observed
 		habitat: habitat, indicator: expected.Indicator, minimum: expected.Minimum,
 		maximum: expected.Maximum, unit: expected.Unit, observed: observed,
 	}
-	if cached, ok := e.cachedAssessment(key); ok {
+	if cached, ok := e.lookupAssessment(key); ok {
 		return cached
 	}
 	result := e.assess(habitat, expected, observed)
