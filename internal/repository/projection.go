@@ -24,6 +24,23 @@ func newProjection() *projection {
 
 func (p *projection) cloneForAppend() *projection {
 	clone := *p
+	clone.Cases = make(map[string]*domain.RestorationCase, len(p.Cases))
+	for key, value := range p.Cases {
+		clone.Cases[key] = value
+	}
+	clone.Events = make(map[string][]domain.Event, len(p.Events))
+	for key, value := range p.Events {
+		cloned := append([]domain.Event(nil), value...)
+		clone.Events[key] = cloned
+	}
+	clone.Credentials = make(map[string]string, len(p.Credentials))
+	for key, value := range p.Credentials {
+		clone.Credentials[key] = value
+	}
+	clone.Idempotency = make(map[string]string, len(p.Idempotency))
+	for key, value := range p.Idempotency {
+		clone.Idempotency[key] = value
+	}
 	return &clone
 }
 
