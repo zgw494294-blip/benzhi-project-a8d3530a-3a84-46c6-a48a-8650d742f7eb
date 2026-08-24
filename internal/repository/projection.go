@@ -22,6 +22,11 @@ func newProjection() *projection {
 	}
 }
 
+func (p *projection) cloneForAppend() *projection {
+	clone := *p
+	return &clone
+}
+
 func (p *projection) apply(entry LedgerEntry) error {
 	event := entry.Event
 	current := p.Cases[event.CaseID]

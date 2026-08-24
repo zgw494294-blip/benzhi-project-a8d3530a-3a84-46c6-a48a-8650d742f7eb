@@ -64,17 +64,27 @@ func (s *LocalStore) Append(caseID string, expectedVersion int64, events []domai
 			return nil, err
 		}
 	}
+	staged := s.projection.cloneForAppend()
+	staged.Cases[caseID] = working
+	staged.Events[caseID] = append(staged.Events[caseID], events...)
+	for _, event := range events {
+		if event.IdempotencyKey != "" {
+			staged.Idempotency[event.IdempotencyKey] = caseID
+		}
+	}
+	if working.Certificate != nil {
+		staged.Credentials[working.Certificate.CredentialCode] = caseID
+	}
 	entries, err := s.ledger.appendBatch(events)
 	if err != nil {
 		return nil, err
 	}
-	for _, entry := range entries {
-		if err := s.projection.apply(entry); err != nil {
-			return nil, err
-		}
-	}
-	if err := saveSnapshot(s.snapshotPath, s.projection); err != nil {
+	last := entries[len(entries)-1]
+	staged.LastSequence = last.Sequence
+	staged.LastHash = last.Hash
+	s.projection = staged
+	if err := saveSnapshot(s.snapshotPath, staged); err != nil {
 		return nil, err
 	}
-	return s.projection.Cases[caseID].Clone(), nil
+	return staged.Cases[caseID].Clone(), nil
 }
