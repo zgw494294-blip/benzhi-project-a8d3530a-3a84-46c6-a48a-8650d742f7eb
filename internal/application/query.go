@@ -1,6 +1,10 @@
 package application
 
-import "benzhi-project-a8d3530a-3a84-46c6-a48a-8650d742f7eb/internal/domain"
+import (
+	"fmt"
+
+	"benzhi-project-a8d3530a-3a84-46c6-a48a-8650d742f7eb/internal/domain"
+)
 
 type CaseDetail struct {
 	Case     *domain.RestorationCase `json:"case"`
@@ -10,7 +14,7 @@ type CaseDetail struct {
 func (s *Service) GetCase(caseID string) (CaseDetail, error) {
 	item, err := s.store.Get(caseID)
 	if err != nil {
-		return CaseDetail{}, err
+		return CaseDetail{}, fmt.Errorf("读取案件详情: %w", err)
 	}
 	events, err := s.store.Events(caseID)
 	if err != nil {
@@ -22,7 +26,11 @@ func (s *Service) GetCase(caseID string) (CaseDetail, error) {
 func (s *Service) ListCases() []*domain.RestorationCase { return s.store.List() }
 
 func (s *Service) GetCertificate(code string) (*domain.AcceptanceCertificate, error) {
-	return s.store.Certificate(code)
+	certificate, err := s.store.Certificate(code)
+	if err != nil {
+		return nil, fmt.Errorf("读取验收凭据: %w", err)
+	}
+	return certificate, nil
 }
 
 type SystemIntegrity struct {
