@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"benzhi-project-a8d3530a-3a84-46c6-a48a-8650d742f7eb/internal/domain"
 )
 
 type snapshotFile struct {
@@ -60,4 +62,26 @@ func loadSnapshot(path string) (*snapshotFile, error) {
 		return nil, fmt.Errorf("不支持的投影快照格式")
 	}
 	return &snapshot, nil
+}
+
+func recoverProjection(path string, entries []LedgerEntry) (*projection, error) {
+	snapshot, err := loadSnapshot(path)
+	if err != nil {
+		return nil, fmt.Errorf("加载投影快照: %w", err)
+	}
+	if snapshot == nil {
+		p, replayErr := replay(entries)
+		if replayErr != nil {
+			return nil, fmt.Errorf("重放事件账本: %w", replayErr)
+		}
+		return p, nil
+	}
+	sequence := snapshot.Projection.LastSequence
+	if sequence > int64(len(entries)) {
+		return nil, domain.NewError(domain.CodeIntegrity, "快照序号超前于事件账本")
+	}
+	if sequence > 0 && entries[sequence-1].Hash != snapshot.Projection.LastHash {
+		return nil, domain.NewError(domain.CodeIntegrity, "快照摘要与事件账本不匹配")
+	}
+	return snapshot.Projection, nil
 }

@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"fmt"
 	"path/filepath"
 	"sync"
 
@@ -22,14 +21,9 @@ func Open(dataDir string) (*LocalStore, error) {
 	if err != nil {
 		return nil, err
 	}
-	p, err := replay(entries)
+	p, err := recoverProjection(snapshotPath, entries)
 	if err != nil {
-		return nil, fmt.Errorf("重放事件账本: %w", err)
-	}
-	if existing, loadErr := loadSnapshot(snapshotPath); loadErr == nil && existing != nil {
-		if existing.Projection.LastSequence > p.LastSequence {
-			return nil, domain.NewError(domain.CodeIntegrity, "快照序号超前于事件账本")
-		}
+		return nil, err
 	}
 	store := &LocalStore{ledger: ledger, projection: p, snapshotPath: snapshotPath}
 	if err := saveSnapshot(snapshotPath, p); err != nil {
