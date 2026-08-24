@@ -1,6 +1,7 @@
 package application
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -21,6 +22,10 @@ type SubmitMonitoringCommand struct {
 }
 
 func (s *Service) SubmitMonitoring(command SubmitMonitoringCommand) (CommandResult, error) {
+	return s.SubmitMonitoringContext(context.Background(), command)
+}
+
+func (s *Service) SubmitMonitoringContext(ctx context.Context, command SubmitMonitoringCommand) (CommandResult, error) {
 	if err := command.Meta.validate(domain.RoleMonitor); err != nil {
 		return CommandResult{}, err
 	}
@@ -75,6 +80,9 @@ func (s *Service) SubmitMonitoring(command SubmitMonitoringCommand) (CommandResu
 	}
 	event, err := domain.NewEvent(s.id("evt"), item.ID, domain.EventMonitoringRecorded, command.Meta.Actor, command.Meta.IdempotencyKey, item.Version+1, now, domain.MonitoringRecordedData{Record: record, Remediation: action})
 	if err != nil {
+		return CommandResult{}, err
+	}
+	if err := ctx.Err(); err != nil {
 		return CommandResult{}, err
 	}
 	stored, err := s.store.Append(item.ID, command.Meta.ExpectedVersion, []domain.Event{event})

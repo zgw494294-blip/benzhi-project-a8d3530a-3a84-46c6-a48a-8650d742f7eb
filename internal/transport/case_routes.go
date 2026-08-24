@@ -89,7 +89,7 @@ func (s *Server) handleMonitoring(w http.ResponseWriter, r *http.Request, caseID
 		writeError(w, err)
 		return
 	}
-	result, err := s.app.SubmitMonitoring(application.SubmitMonitoringCommand{
+	result, err := s.app.SubmitMonitoringContext(r.Context(), application.SubmitMonitoringCommand{
 		Meta: request.application(), CaseID: caseID, Indicator: request.Indicator, ObservedValue: request.ObservedValue,
 		Unit: request.Unit, EvidenceNote: request.EvidenceNote, CapturedBy: request.CapturedBy, CapturedAt: request.CapturedAt,
 		RemediationOwner: request.RemediationOwner, RemediationDueAt: request.RemediationDueAt,
