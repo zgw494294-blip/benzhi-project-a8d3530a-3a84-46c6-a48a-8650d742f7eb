@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="海岸带生态修复证据、整改、复测与独立验收工作台">
+  <title>潮证 · 海岸带修复证据验收台</title>
+  <link rel="stylesheet" href="/assets/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="海岸带修复证据验收台首页">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span><strong>潮证</strong><small>COASTAL EVIDENCE DESK</small></span>
+    </a>
+    <div class="operator">
+      <label for="actor">当前操作人</label>
+      <input id="actor" value="现场监测员-01" maxlength="40" autocomplete="name">
+      <span class="ledger-state" id="ledgerState">账本连接中</span>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <aside class="case-rail" aria-label="修复案件">
+      <div class="section-heading">
+        <div><span class="eyebrow">RESTORATION CASES</span><h1>修复案件</h1></div>
+        <button class="primary compact" id="openCreate" type="button">新建案件</button>
+      </div>
+      <div class="case-filter">
+        <label class="sr-only" for="caseSearch">搜索案件</label>
+        <input id="caseSearch" type="search" placeholder="搜索站点或案件名称">
+      </div>
+      <div id="caseList" class="case-list" aria-live="polite"></div>
+    </aside>
+
+    <section class="case-stage" id="caseStage" aria-live="polite">
+      <div class="empty-state" id="emptyState">
+        <span class="contour" aria-hidden="true"></span>
+        <p class="eyebrow">EVIDENCE BEFORE RELEASE</p>
+        <h2>证据按顺序抵达，结论才有落点。</h2>
+        <p>选择左侧案件查看基线、现场监测、整改复测和独立验收。</p>
+        <button class="primary" type="button" data-open-create>建立首个案件</button>
+      </div>
+
+      <div id="caseDetail" class="detail" hidden>
+        <div class="detail-header">
+          <div>
+            <div class="meta-line"><span id="detailSite"></span><span id="detailHabitat"></span></div>
+            <h2 id="detailName"></h2>
+            <p id="detailBaseline"></p>
+          </div>
+          <span id="detailStatus" class="status-pill"></span>
+        </div>
+        <div class="metric-strip" id="metrics"></div>
+        <div class="action-bar">
+          <div class="tabs" role="tablist" aria-label="案件视图">
+            <button class="tab active" type="button" data-tab="evidence" role="tab" aria-selected="true">证据时间线</button>
+            <button class="tab" type="button" data-tab="baseline" role="tab" aria-selected="false">锁定基线</button>
+          </div>
+          <div class="commands">
+            <button class="secondary" id="openMonitoring" type="button">录入监测</button>
+            <button class="primary" id="openAcceptance" type="button">独立复核</button>
+          </div>
+        </div>
+        <div id="evidencePanel" class="panel">
+          <section class="remediation-band" id="remediationBand" hidden>
+            <div class="section-heading"><div><span class="eyebrow">OPEN DEVIATIONS</span><h3>待关闭整改</h3></div></div>
+            <div id="remediationList" class="remediation-list"></div>
+          </section>
+          <section class="timeline-section">
+            <div class="section-heading"><div><span class="eyebrow">AUDIT TRAIL</span><h3>不可跳步的证据记录</h3></div><span id="eventCount" class="count"></span></div>
+            <ol id="timeline" class="timeline"></ol>
+          </section>
+        </div>
+        <div id="baselinePanel" class="panel" hidden>
+          <div class="baseline-note"><strong>基线已锁定</strong><span>建档后不可修改；后续每次判定均引用此版本。</span></div>
+          <div class="table-wrap"><table><thead><tr><th>指标</th><th>允许下限</th><th>允许上限</th><th>单位</th></tr></thead><tbody id="baselineBody"></tbody></table></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="createDialog">
+    <form id="createForm" method="dialog">
+      <div class="dialog-head"><div><span class="eyebrow">LOCK A BASELINE</span><h2>建立修复案件</h2></div><button class="icon-button" type="button" data-close aria-label="关闭">×</button></div>
+      <div class="form-grid">
+        <label>案件名称<input name="name" required maxlength="80" placeholder="如：东湾红树林一期修复"></label>
+        <label>站点编码<input name="siteCode" required maxlength="30" placeholder="如：DW-MG-01"></label>
+        <label>栖息地类型<select name="habitatType" required><option value="红树林">红树林</option><option value="盐沼">盐沼</option><option value="海草床">海草床</option><option value="珊瑚礁">珊瑚礁</option><option value="其他">其他</option></select></label>
+      </div>
+      <div class="subhead"><div><strong>基线指标</strong><span>至少一项，保存后不可变更</span></div><button class="text-button" id="addBaseline" type="button">添加指标</button></div>
+      <div id="baselineRows" class="baseline-rows"></div>
+      <div class="dialog-actions"><button class="secondary" type="button" data-close>取消</button><button class="primary" type="submit">锁定基线并建档</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="monitoringDialog">
+    <form id="monitoringForm" method="dialog">
+      <div class="dialog-head"><div><span class="eyebrow">FIELD EVIDENCE</span><h2>录入现场监测</h2></div><button class="icon-button" type="button" data-close aria-label="关闭">×</button></div>
+      <div class="form-grid">
+        <label>基线指标<select name="indicator" id="indicatorSelect" required></select></label>
+        <label>观测值<input name="observedValue" type="number" step="any" required></label>
+        <label>采集时间<input name="capturedAt" type="datetime-local" required></label>
+        <label class="full">证据说明<textarea name="evidenceNote" required maxlength="500" placeholder="记录采样位置、设备或照片编号及现场条件"></textarea></label>
+      </div>
+      <div class="deviation-fields">
+        <span>若读数超出基线，系统将自动建立整改任务</span>
+        <div class="form-grid"><label>整改责任人<input name="remediationOwner" value="整改责任人-01"></label><label>整改期限<input name="remediationDueAt" type="datetime-local"></label></div>
+      </div>
+      <div class="dialog-actions"><button class="secondary" type="button" data-close>取消</button><button class="primary" type="submit">提交证据并判定</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="retestDialog">
+    <form id="retestForm" method="dialog">
+      <div class="dialog-head"><div><span class="eyebrow">REMEDIATION RETEST</span><h2>提交整改复测</h2></div><button class="icon-button" type="button" data-close aria-label="关闭">×</button></div>
+      <input type="hidden" name="actionId">
+      <div class="context-block" id="retestContext"></div>
+      <div class="form-grid">
+        <label>复测值<input name="observedValue" type="number" step="any" required></label>
+        <label class="full">整改与复测证据<textarea name="evidenceNote" required maxlength="500" placeholder="说明已实施措施及复测证据编号"></textarea></label>
+      </div>
+      <div class="dialog-actions"><button class="secondary" type="button" data-close>取消</button><button class="primary" type="submit">提交复测</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="acceptanceDialog">
+    <form id="acceptanceForm" method="dialog">
+      <div class="dialog-head"><div><span class="eyebrow">INDEPENDENT REVIEW</span><h2>独立复核与冻结</h2></div><button class="icon-button" type="button" data-close aria-label="关闭">×</button></div>
+      <div class="review-warning" id="reviewWarning"></div>
+      <div class="form-grid">
+        <label>复核决定<select name="decision"><option value="accepted">通过并冻结</option><option value="rejected">退回补证</option></select></label>
+        <label class="full">复核说明<textarea name="reviewNote" required maxlength="800" placeholder="概述证据完整性、整改闭环与结论依据"></textarea></label>
+      </div>
+      <div class="dialog-actions"><button class="secondary" type="button" data-close>取消</button><button class="primary" type="submit">提交独立复核</button></div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>
