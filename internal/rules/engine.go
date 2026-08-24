@@ -15,6 +15,35 @@ type RetestAssessment struct {
 	RuleHit     domain.RuleHit `json:"ruleHit"`
 }
 
-type Engine struct{}
+type assessmentCacheKey struct {
+	habitat   string
+	indicator string
+	minimum   float64
+	maximum   float64
+	unit      string
+	observed  float64
+}
+
+type assessmentCacheEntry struct {
+	key    assessmentCacheKey
+	result Assessment
+}
+
+type Engine struct {
+	assessmentCache []assessmentCacheEntry
+}
 
 func NewEngine() *Engine { return &Engine{} }
+
+func (e *Engine) cachedAssessment(key assessmentCacheKey) (Assessment, bool) {
+	for _, entry := range e.assessmentCache {
+		if entry.key == key {
+			return entry.result, true
+		}
+	}
+	return Assessment{}, false
+}
+
+func (e *Engine) rememberAssessment(key assessmentCacheKey, result Assessment) {
+	e.assessmentCache = append(e.assessmentCache, assessmentCacheEntry{key: key, result: result})
+}

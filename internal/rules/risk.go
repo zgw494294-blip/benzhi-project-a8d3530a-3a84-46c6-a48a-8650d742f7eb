@@ -9,6 +9,19 @@ import (
 )
 
 func (e *Engine) Assess(habitat string, expected domain.IndicatorRange, observed float64) Assessment {
+	key := assessmentCacheKey{
+		habitat: habitat, indicator: expected.Indicator, minimum: expected.Minimum,
+		maximum: expected.Maximum, unit: expected.Unit, observed: observed,
+	}
+	if cached, ok := e.cachedAssessment(key); ok {
+		return cached
+	}
+	result := e.assess(habitat, expected, observed)
+	e.rememberAssessment(key, result)
+	return result
+}
+
+func (e *Engine) assess(habitat string, expected domain.IndicatorRange, observed float64) Assessment {
 	distance := distanceFromRange(expected, observed)
 	if distance == 0 {
 		return Assessment{Passed: true, RuleHit: domain.RuleHit{
