@@ -28,7 +28,7 @@ func (s *LocalStore) Events(caseID string) ([]domain.Event, error) {
 	if s.projection.Cases[caseID] == nil {
 		return nil, domain.NewError(domain.CodeNotFound, "案件 %s 不存在", caseID)
 	}
-	return append([]domain.Event(nil), s.projection.Events[caseID]...), nil
+	return s.projection.Events[caseID], nil
 }
 
 func (s *LocalStore) Certificate(code string) (*domain.AcceptanceCertificate, error) {
