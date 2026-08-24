@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"strings"
+	"sync"
 	"time"
 
 	"benzhi-project-a8d3530a-3a84-46c6-a48a-8650d742f7eb/internal/domain"
@@ -11,14 +12,19 @@ import (
 )
 
 type Service struct {
-	store Store
-	rules *rules.Engine
-	now   func() time.Time
-	id    func(string) string
+	store           Store
+	rules           *rules.Engine
+	now             func() time.Time
+	id              func(string) string
+	receiptMu       sync.RWMutex
+	receiptCaseByID map[string]string
 }
 
 func NewService(store Store, engine *rules.Engine) *Service {
-	return &Service{store: store, rules: engine, now: time.Now, id: randomID}
+	return &Service{
+		store: store, rules: engine, now: time.Now, id: randomID,
+		receiptCaseByID: make(map[string]string),
+	}
 }
 
 func randomID(prefix string) string {
@@ -65,4 +71,24 @@ func ensureUnusedKey(item *domain.RestorationCase, key, operation string) error 
 		return domain.NewError(domain.CodeConflict, "idempotencyKey 已用于其他操作")
 	}
 	return nil
+}
+
+func (s *Service) cachedCommand(key string) (CommandResult, bool) {
+	s.receiptMu.RLock()
+	caseID, ok := s.receiptCaseByID[key]
+	s.receiptMu.RUnlock()
+	if !ok {
+		return CommandResult{}, false
+	}
+	item, err := s.store.Get(caseID)
+	if err != nil {
+		return CommandResult{}, false
+	}
+	return CommandResult{Case: item, Certificate: item.Certificate, Idempotent: true}, true
+}
+
+func (s *Service) rememberCommand(key, caseID string) {
+	s.receiptMu.Lock()
+	s.receiptCaseByID[key] = caseID
+	s.receiptMu.Unlock()
 }

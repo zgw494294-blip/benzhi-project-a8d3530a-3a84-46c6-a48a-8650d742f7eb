@@ -27,10 +27,14 @@ func (s *Service) CreateCase(command CreateCaseCommand) (CommandResult, error) {
 	if err := command.Meta.validate(domain.RoleMonitor); err != nil {
 		return CommandResult{}, err
 	}
+	if cached, ok := s.cachedCommand(command.Meta.IdempotencyKey); ok {
+		return cached, nil
+	}
 	if existing, ok := s.store.IdempotentCase(command.Meta.IdempotencyKey); ok {
 		if !idempotentReceipt(existing, command.Meta.IdempotencyKey, domain.EventCaseCreated) {
 			return CommandResult{}, domain.NewError(domain.CodeConflict, "idempotencyKey 已用于其他操作")
 		}
+		s.rememberCommand(command.Meta.IdempotencyKey, existing.ID)
 		return CommandResult{Case: existing, Idempotent: true}, nil
 	}
 	now := s.now().UTC()
@@ -46,5 +50,6 @@ func (s *Service) CreateCase(command CreateCaseCommand) (CommandResult, error) {
 	if err != nil {
 		return CommandResult{}, err
 	}
+	s.rememberCommand(command.Meta.IdempotencyKey, stored.ID)
 	return CommandResult{Case: stored}, nil
 }

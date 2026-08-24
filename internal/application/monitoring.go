@@ -24,6 +24,9 @@ func (s *Service) SubmitMonitoring(command SubmitMonitoringCommand) (CommandResu
 	if err := command.Meta.validate(domain.RoleMonitor); err != nil {
 		return CommandResult{}, err
 	}
+	if cached, ok := s.cachedCommand(command.Meta.IdempotencyKey); ok {
+		return cached, nil
+	}
 	item, err := s.store.Get(command.CaseID)
 	if err != nil {
 		return CommandResult{}, err
@@ -81,5 +84,6 @@ func (s *Service) SubmitMonitoring(command SubmitMonitoringCommand) (CommandResu
 	if err != nil {
 		return CommandResult{}, err
 	}
+	s.rememberCommand(command.Meta.IdempotencyKey, stored.ID)
 	return CommandResult{Case: stored, Record: &record, Action: action}, nil
 }

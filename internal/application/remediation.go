@@ -20,6 +20,9 @@ func (s *Service) SubmitRetest(command SubmitRetestCommand) (CommandResult, erro
 	if err := command.Meta.validate(domain.RoleRemediator); err != nil {
 		return CommandResult{}, err
 	}
+	if cached, ok := s.cachedCommand(command.Meta.IdempotencyKey); ok {
+		return cached, nil
+	}
 	item, err := s.store.Get(command.CaseID)
 	if err != nil {
 		return CommandResult{}, err
@@ -75,6 +78,7 @@ func (s *Service) SubmitRetest(command SubmitRetestCommand) (CommandResult, erro
 	if err != nil {
 		return CommandResult{}, err
 	}
+	s.rememberCommand(command.Meta.IdempotencyKey, stored.ID)
 	updated, _, _ := stored.FindRemediation(action.ID)
 	return CommandResult{Case: stored, Record: &record, Action: &updated}, nil
 }
