@@ -69,7 +69,16 @@ func (s *Service) SubmitAcceptance(command SubmitAcceptanceCommand) (CommandResu
 		}
 		events = append(events, frozenEvent)
 	}
-	stored, err := s.store.Append(item.ID, command.Meta.ExpectedVersion, events)
+	expectedVersion := command.Meta.ExpectedVersion
+	if certificate != nil {
+		reviewed, appendErr := s.store.Append(item.ID, expectedVersion, events[:1])
+		if appendErr != nil {
+			return CommandResult{}, appendErr
+		}
+		expectedVersion = reviewed.Version
+		events = events[1:]
+	}
+	stored, err := s.store.Append(item.ID, expectedVersion, events)
 	if err != nil {
 		return CommandResult{}, err
 	}
