@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"strings"
+	"sync"
 	"time"
 
 	"benzhi-project-a8d3530a-3a84-46c6-a48a-8650d742f7eb/internal/domain"
@@ -11,14 +12,19 @@ import (
 )
 
 type Service struct {
-	store Store
-	rules *rules.Engine
-	now   func() time.Time
-	id    func(string) string
+	store       Store
+	rules       *rules.Engine
+	now         func() time.Time
+	id          func(string) string
+	detailMu    sync.RWMutex
+	detailCache map[string]CaseDetail
 }
 
 func NewService(store Store, engine *rules.Engine) *Service {
-	return &Service{store: store, rules: engine, now: time.Now, id: randomID}
+	return &Service{
+		store: store, rules: engine, now: time.Now, id: randomID,
+		detailCache: make(map[string]CaseDetail),
+	}
 }
 
 func randomID(prefix string) string {

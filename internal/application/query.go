@@ -1,6 +1,8 @@
 package application
 
-import "benzhi-project-a8d3530a-3a84-46c6-a48a-8650d742f7eb/internal/domain"
+import (
+	"benzhi-project-a8d3530a-3a84-46c6-a48a-8650d742f7eb/internal/domain"
+)
 
 type CaseDetail struct {
 	Case     *domain.RestorationCase `json:"case"`
@@ -8,6 +10,12 @@ type CaseDetail struct {
 }
 
 func (s *Service) GetCase(caseID string) (CaseDetail, error) {
+	s.detailMu.RLock()
+	cached, ok := s.detailCache[caseID]
+	s.detailMu.RUnlock()
+	if ok {
+		return cloneCaseDetail(cached), nil
+	}
 	item, err := s.store.Get(caseID)
 	if err != nil {
 		return CaseDetail{}, err
@@ -16,7 +24,21 @@ func (s *Service) GetCase(caseID string) (CaseDetail, error) {
 	if err != nil {
 		return CaseDetail{}, err
 	}
-	return CaseDetail{Case: item, Timeline: events}, nil
+	detail := CaseDetail{Case: item, Timeline: events}
+	s.detailMu.Lock()
+	s.detailCache[caseID] = detail
+	s.detailMu.Unlock()
+	return cloneCaseDetail(detail), nil
+}
+
+func cloneCaseDetail(detail CaseDetail) CaseDetail {
+	clone := CaseDetail{Case: detail.Case.Clone()}
+	clone.Timeline = make([]domain.Event, len(detail.Timeline))
+	for index, event := range detail.Timeline {
+		clone.Timeline[index] = event
+		clone.Timeline[index].Data = append([]byte(nil), event.Data...)
+	}
+	return clone
 }
 
 func (s *Service) ListCases() []*domain.RestorationCase { return s.store.List() }
